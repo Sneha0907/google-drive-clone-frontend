@@ -14,7 +14,7 @@ export default function Login() {
   const [error, setError] = useState("");
 
   async function call(path) {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetch(`${VITE_API_BASE}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
