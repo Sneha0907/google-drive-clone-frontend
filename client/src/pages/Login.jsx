@@ -2,22 +2,30 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
-// ---------- ENV + helpers ----------
-const RAW = import.meta.env.VITE_API_BASE;
-const API_BASE = RAW ? RAW.replace(/\/+$/, "") : "";
+/* ---------------- ENV + helpers ---------------- */
+
+// Read base from Vite env and trim trailing slashes
+const RAW = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+
+// If someone sets https://localhost:4000 by mistake, force http for dev
+const API_BASE = RAW.startsWith("https://localhost:")
+  ? RAW.replace(/^https:\/\//, "http://")
+  : RAW;
+
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 
+// Small fetch with timeout so UI doesn’t hang forever
 function timeoutFetch(url, options = {}, ms = 10000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
-  return fetch(url, { ...options, signal: controller.signal })
-    .finally(() => clearTimeout(id));
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
-// Log env once at module load
-// (helps catch missing .env or missing redeploy)
+// Helpful logs once
 console.log("[Auth] VITE_API_BASE =", API_BASE);
-console.log("[Auth] window.origin =", ORIGIN);
+console.log("[Auth] origin =", ORIGIN);
+
+/* ---------------- Component ---------------- */
 
 export default function Login() {
   const navigate = useNavigate();
@@ -46,27 +54,32 @@ export default function Login() {
 
   async function httpPost(path, body) {
     if (!API_BASE) {
-      const m = "VITE_API_BASE is not defined. Add it in frontend .env and restart dev server.";
+      const m = "VITE_API_BASE is not defined. Add it in .env and restart the dev server.";
       console.error(m);
-      setDiag(d => ({ ...d, lastUrl: "(missing API_BASE)", status: "ENV_ERROR", note: m }));
+      setDiag((d) => ({ ...d, lastUrl: "(missing API_BASE)", status: "ENV_ERROR", note: m }));
       throw new Error(m);
     }
     const url = `${API_BASE}${path}`;
     setDiag({ lastUrl: url, status: "REQUESTING", note: "" });
-    console.log("➡️ POST", url, body);
 
     try {
-      const res = await timeoutFetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }, 15000);
-
-      console.log("📡 Response object:", res);
+      const res = await timeoutFetch(
+        url,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+        15000
+      );
 
       const text = await res.text();
       let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { console.warn("JSON parse failed:", e, text); }
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // non-JSON error bodies are fine
+      }
 
       if (!res.ok) {
         const msg = data?.error || `HTTP ${res.status}: ${text || "Request failed"}`;
@@ -75,24 +88,23 @@ export default function Login() {
       }
 
       setDiag({ lastUrl: url, status: "OK", note: "" });
-      console.log("✅ Data:", data);
       return data;
     } catch (e) {
-      // CORS/mixed-content/network usually show up as TypeError in browsers
-      console.error("❌ Fetch error:", e);
-      const note = e.name === "AbortError"
-        ? "Timed out (no response). Is the backend up/reachable?"
-        : e.message?.includes("Failed to fetch")
+      const note =
+        e.name === "AbortError"
+          ? "Timed out (no response). Is the backend up/reachable?"
+          : e.message?.includes("Failed to fetch")
           ? "Failed to fetch (possible CORS or wrong URL). Check Network tab & CORS allow list."
           : e.message || "Request failed";
-      setDiag(d => ({ ...d, status: "NETWORK_ERROR", note }));
+      setDiag((d) => ({ ...d, status: "NETWORK_ERROR", note }));
       throw e;
     }
   }
 
   async function handleLogin(e) {
     e.preventDefault();
-    setErr(""); setOk("");
+    setErr("");
+    setOk("");
     setLoading(true);
     try {
       const { session } = await httpPost("/api/auth/login", { email, password });
@@ -108,7 +120,8 @@ export default function Login() {
 
   async function handleSignup(e) {
     e.preventDefault();
-    setErr(""); setOk("");
+    setErr("");
+    setOk("");
     if (password.length < 6) return setErr("Password must be at least 6 characters.");
     if (password !== confirm) return setErr("Passwords do not match.");
     setLoading(true);
@@ -127,9 +140,10 @@ export default function Login() {
 
   async function handleForgot(e) {
     e.preventDefault();
-    setErr(""); setOk("");
+    setErr("");
+    setOk("");
     try {
-      // Only works if backend implements POST /api/auth/forgot
+      // Only works if backend adds POST /api/auth/forgot
       const data = await httpPost("/api/auth/forgot", { email: forgotEmail || email });
       setOk(data.message || "If this email exists, a reset link has been sent.");
       setForgotOpen(false);
@@ -144,25 +158,29 @@ export default function Login() {
   }
 
   async function testApi() {
-    setErr(""); setOk("");
+    setErr("");
+    setOk("");
     if (!API_BASE) {
-      setDiag({ lastUrl: "(missing API_BASE)", status: "ENV_ERROR", note: "Define VITE_API_BASE and restart dev server." });
+      setDiag({
+        lastUrl: "(missing API_BASE)",
+        status: "ENV_ERROR",
+        note: "Define VITE_API_BASE and restart dev server.",
+      });
       return;
     }
     const url = `${API_BASE}/`;
     setDiag({ lastUrl: url, status: "REQUESTING", note: "Testing health endpoint…" });
-    console.log("🩺 GET", url);
     try {
       const res = await timeoutFetch(url, {}, 10000);
       const text = await res.text();
       let json = {};
-      try { json = text ? JSON.parse(text) : {}; } catch {}
-      console.log("🩺 Health:", res.status, json || text);
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {}
       setDiag({ lastUrl: url, status: `HTTP_${res.status}`, note: JSON.stringify(json || text) });
       if (res.ok) setOk("Backend reachable from browser.");
       else setErr("Health check returned non-OK.");
     } catch (e) {
-      console.error("🩺 Health error:", e);
       setDiag({ lastUrl: url, status: "NETWORK_ERROR", note: e.message || "Failed to fetch" });
       setErr("Could not reach backend from browser (CORS/URL/network).");
     }
@@ -172,20 +190,32 @@ export default function Login() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-2xl font-semibold mb-6 text-center">Welcome to Nimbus Drive</h1>
+      <h1 className="text-2xl font-semibold mb-6 text-center">Welcome to GClone Drive</h1>
 
       {/* Mode toggle */}
       <div className="mb-6 flex gap-2 justify-center">
         <button
-          className={`px-3 py-1.5 rounded border ${mode === "login" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-gray-700"}`}
-          onClick={() => { setMode("login"); setErr(""); setOk(""); }}
+          className={`px-3 py-1.5 rounded border ${
+            mode === "login" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-gray-700"
+          }`}
+          onClick={() => {
+            setMode("login");
+            setErr("");
+            setOk("");
+          }}
           type="button"
         >
           Log in
         </button>
         <button
-          className={`px-3 py-1.5 rounded border ${mode === "signup" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-gray-700"}`}
-          onClick={() => { setMode("signup"); setErr(""); setOk(""); }}
+          className={`px-3 py-1.5 rounded border ${
+            mode === "signup" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-gray-700"
+          }`}
+          onClick={() => {
+            setMode("signup");
+            setErr("");
+            setOk("");
+          }}
           type="button"
         >
           Create account
@@ -213,7 +243,7 @@ export default function Login() {
           />
           <button
             type="button"
-            onClick={() => setShowPw(s => !s)}
+            onClick={() => setShowPw((s) => !s)}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600"
           >
             {showPw ? "Hide" : "Show"}
@@ -245,7 +275,12 @@ export default function Login() {
           {mode === "login" && (
             <button
               type="button"
-              onClick={() => { setForgotOpen(true); setErr(""); setOk(""); setForgotEmail(email); }}
+              onClick={() => {
+                setForgotOpen(true);
+                setErr("");
+                setOk("");
+                setForgotEmail(email);
+              }}
               className="text-sm text-sky-700 hover:underline"
             >
               Forgot password?
@@ -257,13 +292,25 @@ export default function Login() {
       {/* Diagnostics */}
       <div className="mt-8 text-xs text-gray-600 border rounded p-3 bg-white">
         <div className="font-semibold mb-1">Diagnostics</div>
-        <div><span className="font-medium">API_BASE:</span> {API_BASE || "(not set)"} </div>
-        <div><span className="font-medium">Origin:</span> {ORIGIN}</div>
-        <div><span className="font-medium">Last URL:</span> {diag.lastUrl}</div>
-        <div><span className="font-medium">Status:</span> {diag.status}</div>
-        <div className="break-words"><span className="font-medium">Note:</span> {diag.note}</div>
+        <div>
+          <span className="font-medium">API_BASE:</span> {API_BASE || "(not set)"}
+        </div>
+        <div>
+          <span className="font-medium">Origin:</span> {ORIGIN}
+        </div>
+        <div>
+          <span className="font-medium">Last URL:</span> {diag.lastUrl}
+        </div>
+        <div>
+          <span className="font-medium">Status:</span> {diag.status}
+        </div>
+        <div className="break-words">
+          <span className="font-medium">Note:</span> {diag.note}
+        </div>
         <div className="mt-2">
-          <button onClick={testApi} className="border px-2 py-1 rounded">Test API</button>
+          <button onClick={testApi} className="border px-2 py-1 rounded">
+            Test API
+          </button>
         </div>
       </div>
 
@@ -285,9 +332,7 @@ export default function Login() {
                 <button type="button" onClick={() => setForgotOpen(false)} className="border px-3 py-1.5 rounded">
                   Cancel
                 </button>
-                <button className="bg-sky-600 text-white px-3 py-1.5 rounded">
-                  Send link
-                </button>
+                <button className="bg-sky-600 text-white px-3 py-1.5 rounded">Send link</button>
               </div>
             </form>
             <p className="text-xs text-gray-500 mt-3">
