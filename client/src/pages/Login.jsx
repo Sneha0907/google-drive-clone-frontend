@@ -289,7 +289,7 @@ export default function Login() {
         </div>
       </form>
 
-      {/* Diagnostics */}
+      {/* Diagnostics 
       <div className="mt-8 text-xs text-gray-600 border rounded p-3 bg-white">
         <div className="font-semibold mb-1">Diagnostics</div>
         <div>
@@ -313,7 +313,7 @@ export default function Login() {
           </button>
         </div>
       </div>
-
+*/}
       {/* Forgot password modal */}
       {forgotOpen && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4">
@@ -336,7 +336,7 @@ export default function Login() {
               </div>
             </form>
             <p className="text-xs text-gray-500 mt-3">
-              You’ll receive an email with a reset link if your account exists.
+              You’ll receive an email with a reset link.
             </p>
           </div>
         </div>
