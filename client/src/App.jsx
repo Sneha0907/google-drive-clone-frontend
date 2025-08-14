@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Link } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Trash from "./pages/Trash.jsx";
+import Reset from "./pages/Reset.jsx";
 import AuthProvider, { useAuth } from "./context/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -16,12 +17,14 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/reset" element={<Reset />} />
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/trash" element={<PrivateRoute><Trash /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+
 
 export default function App() {
   return (
