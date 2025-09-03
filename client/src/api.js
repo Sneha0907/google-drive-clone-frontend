@@ -27,15 +27,15 @@ async function request(path, opts = {}) {
 
   const text = await res.text();
   let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch {} // tolerate non-JSON
+  try { data = text ? JSON.parse(text) : {}; } catch {} 
 
   if (!res.ok) {
-    // Prefer backend error message if present
+    
     const msg = data?.error || text || `HTTP ${res.status}`;
     throw new Error(msg);
   }
 
-  // no-content endpoints return {}
+  
   return text ? data : {};
 }
 

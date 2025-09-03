@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import supabase from "../supabaseClient"; // see file below
+import supabase from "../supabaseClient"; 
 import toast from "react-hot-toast";
 
 export default function Reset() {
@@ -13,27 +13,27 @@ export default function Reset() {
   useEffect(() => {
     async function bootstrap() {
       try {
-        // 1) Try the new PKCE flow (?code=...) – harmless if not present
+      
         try {
           await supabase.auth.exchangeCodeForSession(window.location.href);
         } catch (_) {
-          // ignore; not all links use PKCE
+         
         }
 
-        // 2) If still no session and we have #access_token / #refresh_token in hash, set it (old links)
+        
         const hash = window.location.hash.startsWith("#")
           ? new URLSearchParams(window.location.hash.slice(1))
           : new URLSearchParams();
 
         const access_token = hash.get("access_token");
         const refresh_token = hash.get("refresh_token");
-        const type = hash.get("type"); // usually "recovery"
+        const type = hash.get("type"); 
 
         if (access_token && refresh_token) {
           await supabase.auth.setSession({ access_token, refresh_token });
         }
 
-        // 3) Verify session exists
+        
         const { data } = await supabase.auth.getSession();
         if (data?.session) {
           setSessionValid(true);

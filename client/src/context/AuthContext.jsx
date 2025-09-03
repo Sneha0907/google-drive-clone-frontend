@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx
+
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "token";
@@ -10,16 +10,15 @@ export function useAuth() {
 }
 
 export default function AuthProvider({ children }) {
-  // Load token immediately from localStorage (prevents flicker)
+
   const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEY) || "");
   const [initializing, setInitializing] = useState(true);
 
-  // Finish initialization on mount (in case you want to do async checks later)
+  
   useEffect(() => {
     setInitializing(false);
   }, []);
 
-  // Keep tabs/windows in sync
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === STORAGE_KEY) {
@@ -40,7 +39,7 @@ export default function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  // Convenience: build Authorization header
+
   const authHeader = () => (token ? { Authorization: `Bearer ${token}` } : {});
 
   const value = useMemo(

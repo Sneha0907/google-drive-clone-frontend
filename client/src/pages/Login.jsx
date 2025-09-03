@@ -2,36 +2,32 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
-/* ---------------- ENV + helpers ---------------- */
 
-// Read base from Vite env and trim trailing slashes
 const RAW = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
 
-// If someone sets https://localhost:4000 by mistake, force http for dev
 const API_BASE = RAW.startsWith("https://localhost:")
   ? RAW.replace(/^https:\/\//, "http://")
   : RAW;
 
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 
-// Small fetch with timeout so UI doesn’t hang forever
 function timeoutFetch(url, options = {}, ms = 10000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
-// Helpful logs once
+
 console.log("[Auth] VITE_API_BASE =", API_BASE);
 console.log("[Auth] origin =", ORIGIN);
 
-/* ---------------- Component ---------------- */
+
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [mode, setMode] = useState("login"); // 'login' | 'signup'
+  const [mode, setMode] = useState("login"); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -44,7 +40,6 @@ export default function Login() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
 
-  // live diagnostics
   const [diag, setDiag] = useState({ lastUrl: "", status: "", note: "" });
 
   const canSubmit = useMemo(() => {
@@ -78,7 +73,7 @@ export default function Login() {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        // non-JSON error bodies are fine
+        
       }
 
       if (!res.ok) {
@@ -143,7 +138,7 @@ export default function Login() {
     setErr("");
     setOk("");
     try {
-      // Only works if backend adds POST /api/auth/forgot
+  
       const data = await httpPost("/api/auth/forgot", { email: forgotEmail || email });
       setOk(data.message || "If this email exists, a reset link has been sent.");
       setForgotOpen(false);

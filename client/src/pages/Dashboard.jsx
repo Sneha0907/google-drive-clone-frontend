@@ -42,7 +42,7 @@ export default function Dashboard() {
     catch { window.prompt("Copy link", text); }
   };
 
-  // ---- Folder actions ----
+
   async function createFolder() {
     if (!newFolder.trim()) return;
     await toast.promise(
@@ -69,7 +69,7 @@ export default function Dashboard() {
   function moveFolderDialog(f) { setMoving({ type: "folder", id: f.id, name: f.name }); setMoveOpen(true); }
   function shareFolderLink(id) { copy(`${window.location.origin}/?f=${id}`); }
 
-  // ---- File actions ----
+ 
   async function saveRenameFile() {
     if (!renamingFileId || !renameFileText.trim()) return;
     await toast.promise(
@@ -221,7 +221,7 @@ export default function Dashboard() {
   );
 }
 
-/* --- tiny button helpers for consistent styling --- */
+
 function Action({ onClick, children, icon }) {
   return (
     <button

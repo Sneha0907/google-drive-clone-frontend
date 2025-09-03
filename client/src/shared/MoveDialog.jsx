@@ -9,7 +9,7 @@ export default function MoveDialog({ open, onClose, currentParentId, onMoved, mo
   useEffect(() => {
     if (!open) return;
     (async () => {
-      // list only root-level folders for simplicity
+     
       const r = await api.get("/folders");
       setRoots(r.folders || []);
     })();
